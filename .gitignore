@@ -28,6 +28,11 @@ Thumbs.db
 **/dist/
 **/build/
 
+# Игнорировать node_modules везде
+node_modules/
+frontend/template-app/node_modules/
+*/node_modules/
+
 #Front
 # Logs
 logs
