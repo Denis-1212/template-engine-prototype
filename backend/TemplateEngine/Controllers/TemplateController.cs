@@ -1,66 +1,76 @@
+namespace TemplateEngine.Controllers;
+
 using Microsoft.AspNetCore.Mvc;
-using TemplateEngine.Models;
-using TemplateEngine.Services;
 
-namespace TemplateEngine.Controllers
+using Models;
+
+using Services;
+
+[ApiController]
+[Route("api/[controller]")]
+public class TemplateController(
+    ExplicitTemplateProcessor explicitProcessor,
+    AiTemplateProcessor aiProcessor,
+    ILogger<TemplateController> logger)
+    : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class TemplateController(
-        ExplicitTemplateProcessor explicitProcessor,
-        AiTemplateProcessor aiProcessor,
-        ILogger<TemplateController> logger)
-        : ControllerBase
+
+    #region Methods
+
+    [HttpPost("process")]
+    public async Task<IActionResult> ProcessTemplate([FromBody] TemplateRequest request)
     {
-
-        [HttpPost("process")]
-        public async Task<IActionResult> ProcessTemplate([FromBody] TemplateRequest request)
+        if (string.IsNullOrWhiteSpace(request.Template))
         {
-            if (string.IsNullOrWhiteSpace(request.Template))
-                return BadRequest("Template cannot be empty");
+            return BadRequest("Template cannot be empty");
+        }
 
-            if (string.IsNullOrWhiteSpace(request.FirstName) ||
-                string.IsNullOrWhiteSpace(request.LastName) ||
-                string.IsNullOrWhiteSpace(request.MiddleName))
-                return BadRequest("FirstName, LastName, and MiddleName are required");
+        if (string.IsNullOrWhiteSpace(request.FirstName) ||
+            string.IsNullOrWhiteSpace(request.LastName) ||
+            string.IsNullOrWhiteSpace(request.MiddleName))
+        {
+            return BadRequest("FirstName, LastName, and MiddleName are required");
+        }
 
-            try
+        try
+        {
+            var user = new User(
+                request.FirstName,
+                request.LastName,
+                request.MiddleName,
+                request.Gender
+            );
+
+            string result;
+
+            switch (request.ProcessingType)
             {
-                var user = new User(
-                    request.FirstName,
-                    request.LastName,
-                    request.MiddleName,
-                    request.Gender
-                );
-
-                string result;
-
-                switch (request.ProcessingType)
-                {
-                    case ProcessingType.Explicit:
-                        logger.LogInformation("Processing template with explicit inflection");
-                        result = explicitProcessor.ProcessTemplate(user, request.Template);
-                        break;
-                    case ProcessingType.Ai:
-                        logger.LogInformation("Processing template with AI model");
-                        result = await aiProcessor.ProcessTemplateAsync(user, request.Template);
-                        break;
-                    default:
-                        return BadRequest("Invalid processing type");
-                }
-
-                var response = new TemplateResponse
-                {
-                    Preview = result
-                };
-
-                return Ok(response);
+                case ProcessingType.Explicit:
+                    logger.LogInformation("Processing template with explicit inflection");
+                    result = explicitProcessor.ProcessTemplate(user, request.Template);
+                    break;
+                case ProcessingType.Ai:
+                    logger.LogInformation("Processing template with AI model");
+                    result = await aiProcessor.ProcessTemplateAsync(user, request.Template);
+                    break;
+                default:
+                    return BadRequest("Invalid processing type");
             }
-            catch (Exception ex)
+
+            var response = new TemplateResponse
             {
-                logger.LogError(ex, "Error processing template");
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+                Preview = result
+            };
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error processing template");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+
+    #endregion
+
 }

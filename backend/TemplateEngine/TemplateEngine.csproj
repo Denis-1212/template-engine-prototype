@@ -12,4 +12,14 @@
     <PackageReference Include="Stubble.Core" Version="1.10.8" />
   </ItemGroup>
 
+  <!-- PostBuild скрипт для сборки фронта -->
+  <Target Name="BuildFrontend" BeforeTargets="Build">
+    <Exec Command="cd ../../frontend/template-app &amp;&amp; npm install" ContinueOnError="true" />
+    <Exec Command="cd ../../frontend/template-app &amp;&amp; npm run build" ContinueOnError="true" />
+    <Exec Command="if not exist wwwroot mkdir wwwroot" Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="mkdir -p wwwroot" Condition="'$(OS)' != 'Windows_NT'" />
+    <Exec Command="xcopy /E /I /Y ../../frontend/template-app/build wwwroot" Condition="'$(OS)' == 'Windows_NT'" ContinueOnError="true" />
+    <Exec Command="cp -r ../../frontend/template-app/build/* wwwroot/" Condition="'$(OS)' != 'Windows_NT'" ContinueOnError="true" />
+  </Target>
+
 </Project>

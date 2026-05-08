@@ -25,7 +25,8 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5135/api/template/process', {
+      const apiUrl = `${window.location.origin}/api/template/process`;
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
